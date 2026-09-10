@@ -1,6 +1,7 @@
 import "@/global.css";
 import { useSignIn } from "@clerk/expo";
 import { Link } from "expo-router";
+import { usePostHog } from "posthog-react-native";
 import { styled } from "nativewind";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -15,6 +16,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+
 
 const SafeAreaView = styled(RNSafeAreaView);
 
@@ -80,6 +82,7 @@ function OtpInput({
 
 export default function SignIn() {
     const { signIn } = useSignIn();
+    const posthog = usePostHog();
 
     // Step: 'signin' (email/password form) | 'verify' (OTP for device trust)
     const [step, setStep] = useState<"signin" | "verify">("signin");
@@ -177,6 +180,8 @@ export default function SignIn() {
                 if (finalizeError) {
                     console.error("[SignIn] finalize error:", finalizeError);
                     setGlobalError(finalizeError.message ?? "Failed to activate session.");
+                } else {
+                    posthog.capture("User Signed In");
                 }
                 // Navigation guard trong _layout.tsx sẽ tự redirect khi isSignedIn thay đổi
             } else if (signIn.status === "needs_client_trust" || signIn.status === "needs_second_factor") {
@@ -230,6 +235,8 @@ export default function SignIn() {
                 if (finalizeError) {
                     console.error("[SignIn] finalize error:", finalizeError);
                     setCodeError(finalizeError.message ?? "Failed to activate session.");
+                } else {
+                    posthog.capture("User Signed In");
                 }
                 // Navigation guard trong _layout.tsx sẽ tự redirect
             } else {

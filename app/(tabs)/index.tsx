@@ -5,6 +5,7 @@ import { HOME_BALANCE, HOME_SUBSCRIPTIONS, UPCOMING_SUBSCRIPTIONS } from "@/cons
 import { icons } from "@/constants/icons";
 import images from "@/constants/images";
 import "@/global.css";
+import { posthog } from "@/lib/posthog";
 import { formatCurrency } from "@/lib/utils";
 import { useUser } from '@clerk/expo';
 import dayjs from "dayjs";
@@ -67,13 +68,14 @@ export default function App() {
                     key={item.id}
                     {...item} // Trải toàn bộ field của item ra thành props riêng lẻ
                     expanded={expandedSubscriptionId === item.id} // So sánh: item này có phải cái đang mở không?
-                    onPress={() =>
-                        setExpandedSubscriptionId((currentId) =>
-                            // Nếu id hiện tại đang mở trùng với item này -> đóng lại (null)
-                            // Ngược lại -> mở item này ra (item.id)
-                            currentId === item.id ? null : item.id
-                        )
-                    }
+                    onPress={() => {
+                        const isExpanded = expandedSubscriptionId !== item.id;
+                        posthog?.capture("subscription_details_toggled", {
+                            subscription_id: item.id,
+                            is_expanded: isExpanded,
+                        });
+                        setExpandedSubscriptionId(isExpanded ? item.id : null);
+                    }}
                 />}
                 keyExtractor={(item) => item.id}
                 extraData={expandedSubscriptionId}
