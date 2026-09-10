@@ -35,7 +35,6 @@ function InitialLayout() {
         }
     }, [fontsLoaded]);
 
-    console.log('InitialLayout render:', { fontsLoaded, isLoaded, isSignedIn, segments });
 
     useEffect(() => {
         if (!fontsLoaded || !isLoaded) return;

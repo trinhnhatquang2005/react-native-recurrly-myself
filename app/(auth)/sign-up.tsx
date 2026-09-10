@@ -1,5 +1,5 @@
 import { useSignUp } from "@clerk/expo";
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { styled } from "nativewind";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -80,7 +80,6 @@ function OtpInput({
 // ── Sign-Up Screen ────────────────────────────────────────────────────────────
 export default function SignUp() {
     const { signUp } = useSignUp();
-    const router = useRouter();
 
     // Step: 'register' | 'verify'
     const [step, setStep] = useState<"register" | "verify">("register");
@@ -192,21 +191,44 @@ export default function SignUp() {
         }
         setCodeError("");
         setIsLoading(true);
-        const { error } = await signUp.verifications.verifyEmailCode({ code });
 
-        if (error) {
-            if (error.code === "form_code_incorrect") {
-                setCodeError("Incorrect code. Please check and try again.");
-            } else if (error.code === "verification_expired") {
-                setCodeError("Code has expired. Please request a new one.");
-            } else {
-                setCodeError(error.message ?? "Verification failed. Please try again.");
+        try {
+            const { error } = await signUp.verifications.verifyEmailCode({ code });
+
+            if (error) {
+                if (error.code === "form_code_incorrect") {
+                    setCodeError("Incorrect code. Please check and try again.");
+                } else if (error.code === "verification_expired") {
+                    setCodeError("Code has expired. Please request a new one.");
+                } else {
+                    setCodeError(error.message ?? "Verification failed. Please try again.");
+                }
+                return;
             }
-        } else if (signUp.status === "complete") {
-            await signUp.finalize();
-            router.replace("/(tabs)");
+
+            // Debug log để theo dõi cross-platform issues
+            console.log("[SignUp] status:", signUp.status, "createdSessionId:", signUp.createdSessionId);
+
+            if (signUp.status === "complete") {
+                const { error: finalizeError } = await signUp.finalize();
+                if (finalizeError) {
+                    console.error("[SignUp] finalize error:", finalizeError);
+                    setCodeError(finalizeError.message ?? "Failed to activate session.");
+                }
+                // Navigation guard trong _layout.tsx sẽ tự redirect khi isSignedIn thay đổi
+            } else {
+                // Handle các status chưa complete
+                console.warn("[SignUp] Unexpected status after verify:", signUp.status);
+                setCodeError(
+                    `Sign-up requires additional steps (${signUp.status}). Please try again or contact support.`
+                );
+            }
+        } catch (err: any) {
+            console.error("[SignUp] unexpected error:", err);
+            setCodeError("An unexpected error occurred. Please try again.");
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     // ── Resend code ──
