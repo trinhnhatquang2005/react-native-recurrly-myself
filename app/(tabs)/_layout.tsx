@@ -1,5 +1,6 @@
 import { tabs } from '@/constants/data';
 import { colors, components } from '@/constants/theme';
+import { SubscriptionsProvider } from '@/contexts/SubscriptionsContext';
 import { clsx } from 'clsx';
 import { Tabs } from 'expo-router';
 import { Image, View } from 'react-native';
@@ -20,7 +21,9 @@ const TabLayout = () => {
             </View>
         );
     };
-    return <Tabs screenOptions={{
+    return (
+      <SubscriptionsProvider>
+        <Tabs screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
@@ -49,6 +52,8 @@ const TabLayout = () => {
                 options={{ title: tab.title, tabBarIcon: ({ focused }) => (<TabIcon focused={focused} icon={tab.icon} />) }} />
         ))}
     </Tabs>
+    </SubscriptionsProvider>
+    );
 }
 
 export default TabLayout
