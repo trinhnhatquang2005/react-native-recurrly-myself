@@ -1,5 +1,6 @@
 import { useSignUp } from "@clerk/expo";
 import { Link } from "expo-router";
+import { usePostHog } from "posthog-react-native";
 import { styled } from "nativewind";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -14,6 +15,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+
 
 const SafeAreaView = styled(RNSafeAreaView);
 
@@ -80,6 +82,7 @@ function OtpInput({
 // ── Sign-Up Screen ────────────────────────────────────────────────────────────
 export default function SignUp() {
     const { signUp } = useSignUp();
+    const posthog = usePostHog();
 
     // Step: 'register' | 'verify'
     const [step, setStep] = useState<"register" | "verify">("register");
@@ -172,6 +175,8 @@ export default function SignUp() {
             return;
         }
 
+        posthog.capture("User Registration Started");
+
         const { error: prepareError } = await signUp.verifications.sendEmailCode();
         if (prepareError) {
             setGlobalError("Failed to send verification email.");
@@ -214,6 +219,14 @@ export default function SignUp() {
                 if (finalizeError) {
                     console.error("[SignUp] finalize error:", finalizeError);
                     setCodeError(finalizeError.message ?? "Failed to activate session.");
+                } else {
+                    posthog.capture("User Signed Up");
+                    if (signUp.createdUserId) {
+                        posthog.identify(signUp.createdUserId, {
+                            email: email.trim(),
+                            first_name: firstName.trim(),
+                        });
+                    }
                 }
                 // Navigation guard trong _layout.tsx sẽ tự redirect khi isSignedIn thay đổi
             } else {

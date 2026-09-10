@@ -1,3 +1,4 @@
+import { posthog } from "@/lib/posthog";
 import { formatSubscriptionDateTime } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/expo";
 import { styled } from "nativewind";
@@ -14,6 +15,12 @@ const settings = () => {
     const joinedDate = user?.createdAt
         ? formatSubscriptionDateTime(new Date(user.createdAt).toISOString())
         : 'Unknown';
+
+    const handleSignOut = async () => {
+        posthog?.capture("user_signed_out");
+        await signOut();
+        posthog?.reset();
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -48,7 +55,7 @@ const settings = () => {
                 </View>
 
                 <TouchableOpacity
-                    onPress={() => signOut()}
+                    onPress={handleSignOut}
                     className="auth-button"
                 >
                     <Text className="auth-button-text">Sign Out</Text>
