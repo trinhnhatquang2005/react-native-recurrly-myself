@@ -1,3 +1,4 @@
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import ListHeading from "@/components/ListHeading";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
@@ -9,9 +10,10 @@ import { posthog } from "@/lib/posthog";
 import { formatCurrency } from "@/lib/utils";
 import { useUser } from '@clerk/expo';
 import dayjs from "dayjs";
+import { useSubscriptions } from "@/contexts/SubscriptionsContext";
 import { styled } from "nativewind";
 import { useState } from "react";
-import { FlatList, Image, Text, View } from "react-native";
+import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 
@@ -20,6 +22,9 @@ const SafeAreaView = styled(RNSafeAreaView);
 export default function App() {
     const { user } = useUser();
     const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
+    const { subscriptions, addSubscription } = useSubscriptions();
+    const [isModalVisible, setIsModalVisible] = useState(false);
+
     // Get user display name: firstName, fullName, or email
     const displayName = user?.firstName || user?.fullName || user?.emailAddresses[0]?.emailAddress || 'User';
     return (
@@ -34,7 +39,9 @@ export default function App() {
                                     className="home-avatar" />
                                 <Text className="home-user-name">{displayName}</Text>
                             </View>
-                            <Image source={icons.add} className="home-add-icon" />
+                            <Pressable onPress={() => setIsModalVisible(true)}>
+                                <Image source={icons.add} className="home-add-icon" />
+                            </Pressable>
                         </View>
                         <View className="home-balance-card">
                             <Text className="home-balance-label">Balance</Text>
@@ -63,7 +70,7 @@ export default function App() {
 
                     </>
                 )}
-                data={HOME_SUBSCRIPTIONS}
+                data={subscriptions}
                 renderItem={({ item }) => <SubscriptionCard
                     key={item.id}
                     {...item} // Trải toàn bộ field của item ra thành props riêng lẻ
@@ -84,6 +91,11 @@ export default function App() {
                 ListEmptyComponent={<Text className="home-empty-state">No subscriptions yet.</Text>}
             />
 
+            <CreateSubscriptionModal
+                visible={isModalVisible}
+                onClose={() => setIsModalVisible(false)}
+                onAdd={addSubscription}
+            />
         </SafeAreaView>
     );
 }
